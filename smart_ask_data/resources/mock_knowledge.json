@@ -1,0 +1,30 @@
+{
+  "version": "2026.08",
+  "metrics": [
+    {
+      "metric_id": "account_open_user_count", "version": "1.0", "name": "开户人数",
+      "aliases": ["开户数", "新增开户人数", "新开户"], "description": "成功完成开户的去重用户数",
+      "calculation": {"aggregation": "count_distinct", "field": "user_id"},
+      "source": {"table": "account_openings", "time_field": "opened_at"},
+      "required_filters": [{"field": "status", "operator": "=", "value": "SUCCESS"}],
+      "supported_dimensions": ["region", "date"], "owner": "客户数据团队"
+    },
+    {
+      "metric_id": "successful_transaction_amount", "version": "1.0", "name": "交易金额",
+      "aliases": ["成交金额", "交易额"], "description": "成功交易的金额总和",
+      "calculation": {"aggregation": "sum", "field": "amount", "round": 2},
+      "source": {"table": "transactions", "time_field": "traded_at"},
+      "required_filters": [{"field": "status", "operator": "=", "value": "SUCCESS"}],
+      "supported_dimensions": ["region", "date"], "owner": "交易数据团队"
+    }
+  ],
+  "dimensions": [
+    {"dimension_id": "region", "name": "地区", "aliases": ["城市", "区域"], "column": "region", "members": ["香港", "上海", "北京", "深圳", "广州"]},
+    {"dimension_id": "date", "name": "日期", "aliases": ["天", "每日"], "column": "date"}
+  ],
+  "tables": [
+    {"name": "account_openings", "columns": ["user_id", "region", "opened_at", "status"], "freshness_hours": 24},
+    {"name": "transactions", "columns": ["transaction_id", "user_id", "region", "amount", "traded_at", "status"], "freshness_hours": 24}
+  ],
+  "relationships": [], "rules": {"timezone": "Asia/Shanghai", "default_limit": 100}
+}

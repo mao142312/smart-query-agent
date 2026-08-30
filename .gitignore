@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+.env
+config/settings.local.yaml
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+log/
+
+# Local package cache
+.pnpm-store/
+
+# Local Codex configuration and skills
+.codex/
+
+# Local Sites repository metadata backup
+frontend/.git-sites-backup/

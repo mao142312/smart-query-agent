@@ -1,0 +1,31 @@
+app:
+  name: smart-ask-data
+  environment: development
+  max_retries: 2
+  confidence_threshold: 0.65
+  max_rows: 100
+  knowledge_top_n: 5
+  intent_retrievability_threshold: 0.65
+  knowledge_candidate_threshold: 0.65
+  knowledge_ambiguity_margin: 0.10
+  log_level: INFO
+runtime:
+  query_backend: sqlite
+  knowledge_backend: mock
+  llm_backend: auto
+llm:
+  model: deepseek-v4-flash
+  api_key: ""
+  base_url: https://api.deepseek.com
+  api_mode: chat_completions
+  thinking: enabled
+  timeout_seconds: 30
+knowledge:
+  mock_file: data/mock_knowledge.json
+trino:
+  host: localhost
+  port: 8080
+  user: smart-ask-data
+  catalog: hive
+  schema: default
+  http_scheme: http

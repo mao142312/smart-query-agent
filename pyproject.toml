@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-ask-data"
+version = "1.0.0"
+description = "Knowledge-driven and scored text-to-SQL service"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0,<1.0",
+  "uvicorn[standard]>=0.30.0,<1.0",
+  "langgraph>=0.2.0,<2.0",
+  "pydantic>=2.7.0,<3.0",
+  "PyYAML>=6.0.1,<7.0",
+  "trino>=0.329.0,<1.0",
+  "openai>=1.70.0,<3.0",
+]
+
+[project.scripts]
+smart-ask-data = "main:main"
+
+[tool.setuptools.packages.find]
+include = ["agent*", "tools*", "smart_ask_data*"]
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.package-data]
+smart_ask_data = ["resources/*.json", "resources/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
