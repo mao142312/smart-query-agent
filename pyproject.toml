@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "smart-ask-data"
-version = "1.0.0"
+version = "1.1.0"
 description = "Knowledge-driven and scored text-to-SQL service"
 requires-python = ">=3.10"
 dependencies = [
