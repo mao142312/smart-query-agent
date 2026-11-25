@@ -29,3 +29,4 @@ trino:
   catalog: hive
   schema: default
   http_scheme: http
+  read_only: true

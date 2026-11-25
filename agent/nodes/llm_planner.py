@@ -32,13 +32,62 @@ PLAN_SCHEMA = {
 }
 
 
+def proposal_to_plan(proposal: dict, state: AgentState) -> dict:
+    """Map model choices onto authoritative knowledge; never accept model SQL/definitions."""
+    knowledge = state.get("knowledge", {})
+    metric_lookup = {
+        alias: item for item in knowledge.get("metrics", [])
+        for alias in [item["metric_id"], item["name"], *item.get("aliases", [])]
+    }
+    dimensions = {item["dimension_id"]: item for item in knowledge.get("dimensions", [])}
+    dimension_lookup = {
+        alias: item["dimension_id"] for item in dimensions.values()
+        for alias in [item["dimension_id"], item["name"], *item.get("aliases", [])]
+    }
+    metric = metric_lookup.get(proposal.get("metric_id"))
+    allowed = set(metric.get("supported_dimensions", [])) if metric else set()
+    group_by = [dimension_lookup[item] for item in proposal.get("group_by", [])
+                if item in dimension_lookup and dimension_lookup[item] in allowed]
+    dimension_filters = {}
+    for raw_key, value in proposal.get("dimension_filters", {}).items():
+        key = dimension_lookup.get(raw_key)
+        if key and (not dimensions[key].get("members") or value in dimensions[key]["members"]):
+            dimension_filters[key] = value
+    plan = dict(state.get("plan", {}))
+    plan["filters"] = dict(plan.get("filters", {}))
+    plan.update(metric=metric, group_by=group_by, dimensions=dimensions)
+    plan["filters"]["dimensions"] = dimension_filters
+    resolved = bool(proposal.get("time_resolved"))
+    start = proposal.get("start_date") if resolved else None
+    end = proposal.get("end_date") if resolved else None
+    plan["filters"].update(start_date=start, end_date=end)
+    plan["time_semantics"] = {
+        "detected": proposal.get("time_detected"), "resolved": resolved,
+        "expression": proposal.get("time_expression"), "start_date": start, "end_date": end,
+        "granularity": proposal.get("time_granularity"), "source": "llm",
+        "default_applied": bool(proposal.get("default_applied")),
+        "error": proposal.get("time_error") if not resolved else None,
+    }
+    derivation = ({"operation": "share_of_total", "label": "占比", "format": "percent"}
+                  if proposal.get("derivation") == "share_of_total" else None)
+    projections = []
+    if proposal.get("include_total") and group_by:
+        projections.append({"projection_id": "total", "kind": "total", "group_by": []})
+    projections.append({
+        "projection_id": "breakdown" if group_by else "total",
+        "kind": "breakdown" if group_by else "total", "group_by": group_by, "derivation": derivation,
+    })
+    plan["projections"] = projections
+    return plan
+
+
 def create_semantic_parser(llm_client=None):
     def parse_semantics(state: AgentState) -> AgentState:
         knowledge = state.get("knowledge", {})
         model_input = {
             "question": state["question"],
             "intent": state.get("intent", {}),
-            "reference_date": date.today().isoformat(),
+            "reference_date": state.get("request_reference_date") or date.today().isoformat(),
             "timezone": knowledge.get("rules", {}).get("timezone", "Asia/Shanghai"),
             "metrics": knowledge.get("metrics", []),
             "dimensions": knowledge.get("dimensions", []),
@@ -68,61 +117,10 @@ def create_semantic_parser(llm_client=None):
                 schema_name="query_plan",
                 schema=PLAN_SCHEMA,
             )
-            metric_items = knowledge.get("metrics", [])
-            dimension_items = knowledge.get("dimensions", [])
-            metric_lookup = {
-                alias: item for item in metric_items
-                for alias in [item["metric_id"], item["name"], *item.get("aliases", [])]
-            }
-            dimensions = {item["dimension_id"]: item for item in dimension_items}
-            dimension_lookup = {
-                alias: item["dimension_id"] for item in dimension_items
-                for alias in [item["dimension_id"], item["name"], *item.get("aliases", [])]
-            }
-            metric = metric_lookup.get(proposal.get("metric_id"))
-            group_by = [dimension_lookup[item] for item in proposal.get("group_by", []) if item in dimension_lookup]
-            allowed = set(metric.get("supported_dimensions", [])) if metric else set()
-            group_by = [item for item in group_by if item in allowed]
-            dimension_filters = {}
-            for raw_key, value in proposal.get("dimension_filters", {}).items():
-                key = dimension_lookup.get(raw_key)
-                if key and (not dimensions[key].get("members") or value in dimensions[key]["members"]):
-                    dimension_filters[key] = value
-            plan = dict(state.get("plan", {}))
-            plan["filters"] = dict(plan.get("filters", {}))
-            plan["metric"] = metric
-            plan["group_by"] = group_by
-            plan["dimensions"] = dimensions
-            plan["filters"]["dimensions"] = dimension_filters
-            time_resolved = bool(proposal.get("time_resolved"))
-            start_date = proposal.get("start_date") if time_resolved else None
-            end_date = proposal.get("end_date") if time_resolved else None
-            plan["filters"]["start_date"] = start_date
-            plan["filters"]["end_date"] = end_date
-            plan["time_semantics"] = {
-                "detected": proposal.get("time_detected"),
-                "resolved": time_resolved,
-                "expression": proposal.get("time_expression"),
-                "start_date": start_date,
-                "end_date": end_date,
-                "granularity": proposal.get("time_granularity"),
-                "source": "llm",
-                "default_applied": bool(proposal.get("default_applied")),
-                "error": proposal.get("time_error") if not time_resolved else None,
-            }
-            derivation_name = proposal.get("derivation")
-            derivation = {"operation": "share_of_total", "label": "占比", "format": "percent"} if derivation_name == "share_of_total" else None
-            projections = []
-            if proposal.get("include_total") and group_by:
-                projections.append({"projection_id": "total", "kind": "total", "group_by": []})
-            projections.append({
-                "projection_id": "breakdown" if group_by else "total",
-                "kind": "breakdown" if group_by else "total",
-                "group_by": group_by, "derivation": derivation,
-            })
-            plan["projections"] = projections
+            plan = proposal_to_plan(proposal, state)
             return {
                 "plan": plan,
+                "request_reference_date": model_input["reference_date"],
                 "llm_used": True,
                 "llm_error": "",
                 "llm_request": model_input,

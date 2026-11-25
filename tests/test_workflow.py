@@ -99,7 +99,7 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn("FROM transactions", result["sql"])
         self.assertIn("status = 'SUCCESS'", result["sql"])
 
-    def test_low_score_result_retries_with_limit(self):
+    def test_empty_result_stops_without_identical_retries(self):
         class EmptyQueryClient:
             def execute(self, sql):
                 return []
@@ -107,7 +107,8 @@ class WorkflowTest(unittest.TestCase):
         knowledge = LocalKnowledgeClient(Path(__file__).parents[1] / "data/mock_knowledge.json")
         app = build_graph(knowledge, EmptyQueryClient(), max_retries=2, llm_client=FakeSemanticLLM())
         result = app.invoke({"question": "昨天香港开户人数是多少？", "retry_count": 0, "trace": []})
-        self.assertEqual(3, len(result["sql_history"]))
+        self.assertEqual(1, len(result["sql_history"]))
+        self.assertEqual(0, result["retry_count"])
         self.assertEqual("FAILED", result["retry_action"])
         self.assertIn("查询结果为空", result["answer"])
 

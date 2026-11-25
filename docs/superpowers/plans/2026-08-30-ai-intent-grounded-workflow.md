@@ -1,5 +1,7 @@
 # AI Intent-Grounded Workflow Implementation Plan
 
+> Historical plan: the 2026-10-11 LangGraph-only decision supersedes all requirements to retain or compare ScoredWorkflow. LangGraph is mandatory; see docs/方案设计.md. Completed historical tasks below are not a current instruction to restore the fallback.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rewire the question-to-SQL workflow so AI intent extraction precedes structured Top N knowledge retrieval and grounded logical planning.

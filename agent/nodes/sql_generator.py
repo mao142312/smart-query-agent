@@ -67,6 +67,20 @@ def generate_sql(state: AgentState) -> AgentState:
     return {"sql": sql, "validation_errors": [], "trace": [*state.get("trace", []), "sql_generated"]}
 
 
+def generate_sql_safely(state: AgentState) -> AgentState:
+    """A generator defect is a terminal observation, not a reason to rerun identical code."""
+    try:
+        return {**generate_sql(state), "retry_action": "CONTINUE"}
+    except Exception:  # noqa: BLE001 - Convert generator failures to a closed workflow outcome.
+        issue = "SQL 生成失败，需要检查业务知识或生成器实现"
+        return {
+            "sql": "", "rows": [], "execution_error": "",
+            "validation_errors": [issue], "retry_action": "REPAIR",
+            "retry_feedback": {"reason_code": "SQL_GENERATION_FAILED", "issues": [issue]},
+            "trace": [*state.get("trace", []), "sql_generation_failed"],
+        }
+
+
 def validate_sql(state: AgentState) -> AgentState:
     sql = state.get("sql", "").strip()
     lowered = sql.lower()

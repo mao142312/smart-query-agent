@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -53,6 +52,7 @@ class TrinoSettings:
     catalog: str = "hive"
     schema: str = "default"
     http_scheme: str = "http"
+    read_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -82,6 +82,17 @@ def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
         else:
             result[key] = value
     return result
+
+
+def _bool_value(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"无效的布尔配置值：{value!r}")
 
 
 def load_settings(path: Path | None = None) -> Settings:
@@ -125,6 +136,7 @@ def load_settings(path: Path | None = None) -> Settings:
             catalog=os.getenv("SAD_TRINO_CATALOG", trino.get("catalog", "hive")),
             schema=os.getenv("SAD_TRINO_SCHEMA", trino.get("schema", "default")),
             http_scheme=os.getenv("SAD_TRINO_HTTP_SCHEME", trino.get("http_scheme", "http")),
+            read_only=_bool_value(os.getenv("SAD_TRINO_READ_ONLY", trino.get("read_only", False))),
         ),
         llm=LLMSettings(
             model=os.getenv("SAD_LLM_MODEL", llm.get("model", "deepseek-v4-flash")),

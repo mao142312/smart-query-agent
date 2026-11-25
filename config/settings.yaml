@@ -30,6 +30,7 @@ trino:
   catalog: hive
   schema: default
   http_scheme: http
+  read_only: true
 
 knowledge:
   mock_file: data/mock_knowledge.json
