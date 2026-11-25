@@ -3,9 +3,9 @@ from __future__ import annotations
 from agent.graph import build_graph
 from smart_ask_data.config import ROOT, Settings, load_settings
 from smart_ask_data.service import AskDataService
+from tools.llm_client import OpenAICompatibleLLM
 from tools.qdrant_client import LocalKnowledgeClient
 from tools.trino_client import SQLiteDemoClient, TrinoClient
-from tools.llm_client import OpenAICompatibleLLM
 
 
 def create_service(settings: Settings | None = None) -> AskDataService:
@@ -42,4 +42,4 @@ def create_service(settings: Settings | None = None) -> AskDataService:
         knowledge_threshold=settings.app.knowledge_candidate_threshold,
         ambiguity_margin=settings.app.knowledge_ambiguity_margin,
     )
-    return AskDataService(graph, settings)
+    return AskDataService(graph, settings, query_client=query)

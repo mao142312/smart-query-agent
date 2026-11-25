@@ -7,7 +7,6 @@ from smart_ask_data.config import Settings
 from smart_ask_data.models import AskRequest, AskResponse
 from smart_ask_data.trace_store import create_question_trace, write_failure, write_summary
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -133,9 +132,15 @@ def _build_validation_report(result: dict) -> list[dict]:
 
 
 class AskDataService:
-    def __init__(self, workflow, settings: Settings):
+    def __init__(self, workflow, settings: Settings, query_client=None):
         self.workflow = workflow
         self.settings = settings
+        self.query_client = query_client
+
+    def health_check(self) -> dict:
+        if self.query_client is None:
+            raise RuntimeError("query client is not configured")
+        return self.query_client.health_check()
 
     def ask(self, request: AskRequest) -> AskResponse:
         request.validate()

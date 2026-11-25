@@ -28,5 +28,6 @@ def validate_plan(state: AgentState) -> AgentState:
         "confidence": score, "scores": scores, "score_details": details,
         "validation_errors": errors,
         "retry_action": "STOP" if errors else "CONTINUE",
+        "retry_feedback": {"reason_code": "PLAN_VALIDATION_FAILED", "issues": errors} if errors else {},
         "trace": [*state.get("trace", []), "plan_scored"]
     }

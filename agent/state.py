@@ -27,6 +27,11 @@ class AgentState(TypedDict, total=False):
     sql_history: list[dict[str, Any]]
     retry_action: str
     retry_feedback: dict[str, Any]
+    feedback_history: list[dict[str, Any]]
+    repair_request: dict[str, Any]
+    repair_response: dict[str, Any] | None
+    repair_outcome: str
+    request_reference_date: str
     validation_errors: list[str]
     sql: str
     rows: list[dict[str, Any]]

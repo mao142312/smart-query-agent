@@ -17,7 +17,7 @@
 
 ## 本地运行
 
-核心演示无需安装依赖：
+LangGraph 是必需依赖和唯一工作流引擎，不提供无 LangGraph 的备用执行器。先在当前虚拟环境安装项目依赖（`python -m pip install -e .`），再运行；依赖缺失时明确报错。
 
 ```powershell
 python main.py "昨天香港开户人数是多少？" --debug
@@ -54,6 +54,18 @@ GET  /health
 POST /v1/ask
 GET  /docs
 ```
+
+`GET /health` 会实际执行一次轻量数据源探测。数据源正常且声明为只读时返回
+`200`；连接、认证、配置、超时或只读声明不满足要求时返回 `503`。错误信息经过
+归类和脱敏，不会返回密码、令牌、主机名或完整数据库异常。
+
+Trino 必须显式保持只读声明：
+
+```powershell
+$env:SAD_TRINO_READ_ONLY = "true"
+```
+
+该声明用于部署就绪检查，不替代数据库账号自身的只读授权和 SQL 安全校验。
 
 请求示例：
 
